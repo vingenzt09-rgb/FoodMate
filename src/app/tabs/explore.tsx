@@ -3,6 +3,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StatusBar,
@@ -17,6 +18,7 @@ type Recipe = {
   id: number;
   title: string;
   category: string;
+  image_url: string;
   prep_time_minutes: number;
   cook_time_minutes: number;
   is_featured: boolean;
@@ -37,7 +39,6 @@ export default function ExploreScreen() {
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch fresh data every time this tab comes into focus
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
@@ -73,7 +74,6 @@ export default function ExploreScreen() {
     const isCurrentlyFavorite = favoriteIds.includes(recipeId);
     const action = isCurrentlyFavorite ? 'remove' : 'add';
 
-    // Optimistic Update
     if (isCurrentlyFavorite) {
       setFavoriteIds((prev) => prev.filter((id) => id !== recipeId));
     } else {
@@ -91,13 +91,11 @@ export default function ExploreScreen() {
         }),
       });
     } catch (error) {
-      // Revert on error
       if (isCurrentlyFavorite) setFavoriteIds((prev) => [...prev, recipeId]);
       else setFavoriteIds((prev) => prev.filter((id) => id !== recipeId));
     }
   };
 
-  // Filter recipes that are in the favoriteIds array
   const favoriteRecipes = recipes.filter((r) => favoriteIds.includes(r.id));
 
   return (
@@ -116,7 +114,6 @@ export default function ExploreScreen() {
           </View>
         ) : (
           <>
-            {/* --- MY FAVORITES SECTION --- */}
             <Text style={styles.sectionTitle}>My Favorites</Text>
             {favoriteRecipes.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.favList}>
@@ -129,7 +126,11 @@ export default function ExploreScreen() {
                       onPress={() => router.push(`/recipe/${recipe.id}`)}
                     >
                       <View style={[styles.favImage, { backgroundColor: meta.color }]}>
-                        <Text style={styles.favEmoji}>{meta.emoji}</Text>
+                        {recipe.image_url ? (
+                          <Image source={{ uri: recipe.image_url }} style={styles.favActualImage} resizeMode="cover" />
+                        ) : (
+                          <Text style={styles.favEmoji}>{meta.emoji}</Text>
+                        )}
                       </View>
                       <Text style={styles.favTitle} numberOfLines={1}>{recipe.title}</Text>
                       <Text style={styles.favTime}>⏱ {totalTime(recipe)} min</Text>
@@ -143,7 +144,6 @@ export default function ExploreScreen() {
               </View>
             )}
 
-            {/* --- ALL RECIPES SECTION --- */}
             <Text style={[styles.sectionTitle, { marginTop: 30 }]}>All Recipes</Text>
             <View style={styles.recipeGrid}>
               {recipes.map((recipe) => {
@@ -157,7 +157,12 @@ export default function ExploreScreen() {
                     onPress={() => router.push(`/recipe/${recipe.id}`)}
                   >
                     <View style={[styles.recipeImage, { backgroundColor: meta.color }]}>
-                      <Text style={styles.recipeEmoji}>{meta.emoji}</Text>
+                      {recipe.image_url ? (
+                        <Image source={{ uri: recipe.image_url }} style={styles.recipeActualImage} resizeMode="cover" />
+                      ) : (
+                        <Text style={styles.recipeEmoji}>{meta.emoji}</Text>
+                      )}
+                      
                       <Pressable
                         style={styles.favoritePosition}
                         onPress={(e) => handleToggleFavorite(recipe.id, e)}
@@ -191,7 +196,6 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, color: '#8C817A', marginTop: 5 },
   sectionTitle: { fontSize: 19, fontWeight: 'bold', color: '#30241F', marginBottom: 15 },
   
-  // Favorites Horizontal List
   favList: { gap: 15, paddingRight: 20 },
   favCard: {
     width: 130,
@@ -203,6 +207,7 @@ const styles = StyleSheet.create({
   },
   favImage: { height: 90, justifyContent: 'center', alignItems: 'center' },
   favEmoji: { fontSize: 40 },
+  favActualImage: { width: '100%', height: '100%', position: 'absolute' },
   favTitle: { fontSize: 13, fontWeight: 'bold', color: '#30241F', marginTop: 8, marginHorizontal: 8 },
   favTime: { fontSize: 11, color: '#F47A35', marginBottom: 8, marginHorizontal: 8, marginTop: 2 },
   emptyFav: {
@@ -213,7 +218,6 @@ const styles = StyleSheet.create({
   },
   emptyFavText: { color: '#F47A35', fontSize: 13, fontWeight: '600' },
 
-  // All Recipes Grid
   recipeGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   recipeCard: {
     width: '48%',
@@ -226,6 +230,7 @@ const styles = StyleSheet.create({
   },
   recipeImage: { height: 115, justifyContent: 'center', alignItems: 'center' },
   recipeEmoji: { fontSize: 57 },
+  recipeActualImage: { width: '100%', height: '100%', position: 'absolute' },
   favoritePosition: { position: 'absolute', top: 8, right: 10, padding: 5, zIndex: 10 },
   favorite: { fontSize: 25, color: '#A99C93' },
   favoriteActive: { color: '#F47A35' },

@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StatusBar,
@@ -33,7 +34,6 @@ const categoryMeta: Record<string, { emoji: string; color: string }> = {
   Dessert: { emoji: '🍰', color: '#F5E5DF' },
 };
 
-// Splits a \n-separated string into trimmed, non-empty lines
 const splitLines = (text: string | null): string[] => {
   if (!text) return [];
   return text
@@ -115,7 +115,15 @@ export default function RecipeDetailScreen() {
         </Pressable>
 
         <View style={[styles.hero, { backgroundColor: meta.color }]}>
-          <Text style={styles.heroEmoji}>{meta.emoji}</Text>
+          {recipe.image_url ? (
+            <Image
+              source={{ uri: recipe.image_url }}
+              style={styles.heroActualImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={styles.heroEmoji}>{meta.emoji}</Text>
+          )}
         </View>
 
         <Text style={styles.category}>{recipe.category.toUpperCase()}</Text>
@@ -141,7 +149,6 @@ export default function RecipeDetailScreen() {
           </View>
         </View>
 
-        {/* Ingredients */}
         {ingredientList.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
@@ -159,7 +166,6 @@ export default function RecipeDetailScreen() {
           </>
         )}
 
-        {/* Instructions */}
         {instructionList.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
@@ -226,8 +232,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
+    overflow: 'hidden',
   },
   heroEmoji: { fontSize: 110 },
+  heroActualImage: { width: '100%', height: '100%', position: 'absolute' },
   category: {
     fontSize: 11,
     color: '#F47A35',

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StatusBar,
@@ -144,7 +145,6 @@ export default function HomeScreen() {
     }
   };
 
-  // --- UPDATED LOGOUT FUNCTION ---
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -271,9 +271,18 @@ export default function HomeScreen() {
               onPress={() => router.push(`/recipe/${featuredRecipe.id}`)}
             >
               <View style={styles.featuredImage}>
-                <Text style={styles.featuredEmoji}>
-                  {categoryMeta[featuredRecipe.category]?.emoji || '🍽️'}
-                </Text>
+                {featuredRecipe.image_url ? (
+                  <Image
+                    source={{ uri: featuredRecipe.image_url }}
+                    style={styles.featuredActualImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.featuredEmoji}>
+                    {categoryMeta[featuredRecipe.category]?.emoji || '🍽️'}
+                  </Text>
+                )}
+                
                 <Pressable
                   style={styles.favoritePosition}
                   onPress={(e) => handleToggleFavorite(featuredRecipe.id, e)}
@@ -342,7 +351,16 @@ export default function HomeScreen() {
                       { backgroundColor: meta.color },
                     ]}
                   >
-                    <Text style={styles.recipeEmoji}>{meta.emoji}</Text>
+                    {recipe.image_url ? (
+                      <Image
+                        source={{ uri: recipe.image_url }}
+                        style={styles.recipeActualImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={styles.recipeEmoji}>{meta.emoji}</Text>
+                    )}
+                    
                     <Pressable
                       style={styles.favoritePosition}
                       onPress={(e) => handleToggleFavorite(recipe.id, e)}
@@ -514,6 +532,11 @@ const styles = StyleSheet.create({
   featuredEmoji: {
     fontSize: 76,
   },
+  featuredActualImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
   featuredInfo: {
     padding: 15,
   },
@@ -560,6 +583,11 @@ const styles = StyleSheet.create({
   },
   recipeEmoji: {
     fontSize: 57,
+  },
+  recipeActualImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
   },
   favoritePosition: {
     position: 'absolute',
