@@ -1,56 +1,51 @@
-# Welcome to your Expo app 👋
+# 🍔 FoodMate - Android Recipe App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+FoodMate is a full-stack mobile application built with **React Native (Expo)** and a **PHP/MySQL** backend. It allows users to discover delicious recipes, search by category, view detailed cooking instructions, and save their favorite meals.
 
-## Get started
+## ✨ Features
 
-1. Install dependencies
+- **User Authentication:** Secure Register and Login using PHP `password_hash()` and `password_verify()`.
+- **Recipe Discovery:** Browse a list of recipes fetched dynamically from a MySQL database.
+- **Search & Filter:** Search recipes by name and filter by categories (Breakfast, Lunch, Dinner, Dessert).
+- **Recipe Details:** View prep/cook times, servings, ingredients, and step-by-step instructions.
+- **Favorites:** Save recipes to a personal favorites list (stored in the database).
+- **Explore Tab:** View all recipes and your personal favorites in one place.
+- **Modern UI:** Clean, responsive design with a warm orange/cream theme.
 
-   ```bash
-   npm install
-   ```
+## 🛠️ Tech Stack
 
-2. Start the app
+**Frontend (Mobile App):**
+- React Native (Expo)
+- TypeScript
+- Expo Router (File-based routing)
+- React Hooks (useState, useEffect, useMemo, useCallback)
+- AsyncStorage (Local session management)
 
-   ```bash
-   npx expo start
-   ```
+**Backend (API):**
+- PHP
+- MySQL (MariaDB via XAMPP)
+- JSON REST API
+- Prepared Statements (Security against SQL Injection)
 
-In the output, you'll find options to open the app in a
+## 🚀 How to Run Locally
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### 1. Backend Setup (XAMPP)
+1. Install [XAMPP](https://www.apachefriends.org/) and start **Apache** and **MySQL**.
+2. Copy the `backend` folder into `C:\xampp\htdocs\` and rename it to `foodmate-api`.
+3. Open phpMyAdmin (or MySQL CLI) and create a database named `foodmate_db`.
+4. Create the required tables (users, recipes, favorites) using SQL commands.
+5. Update `backend/db.php` with your MySQL username and password.
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 2. Frontend Setup (Expo)
+1. Clone this repository.
+2. Run `npm install` to install dependencies.
+3. Open `src/constants/api.ts` and update the `API_URL` to your computer's local IPv4 address (e.g., `http://192.168.1.100/foodmate-api`).
+4. Run `npx expo start` and scan the QR code with the Expo Go app on your Android device.
 
-## Get a fresh project
+## 👨‍💻 Developer
+**Vinuka Wathsara Hettiarachchi**
+[LinkedIn Profile](www.linkedin.com/in/vinuka-hettiarachchi-b70109435)
 
-When you're ready, run:
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+*Built with ❤️ for food lovers.*
