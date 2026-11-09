@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Favorites API</title>
+</head>
+<body>
+  <h2>Favorites API Test</h2>
+  <button onclick="testAdd()">1. Add Favorite (User 1, Recipe 1)</button>
+  <button onclick="testList()">2. List Favorites</button>
+  <button onclick="testRemove()">3. Remove Favorite (User 1, Recipe 1)</button>
+  
+  <h3>Result:</h3>
+  <pre id="output" style="background: #eee; padding: 10px;">Result will show here...</pre>
+
+  <script>
+    // Since this file is inside foodmate-api folder, we can use relative path
+    const API = 'favorites.php';
+
+    async function testAdd() {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: 1, recipe_id: 1, action: 'add' })
+      });
+      document.getElementById('output').innerText = await res.text();
+    }
+
+    async function testRemove() {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: 1, recipe_id: 1, action: 'remove' })
+      });
+      document.getElementById('output').innerText = await res.text();
+    }
+
+    async function testList() {
+      const res = await fetch(API + '?user_id=1');
+      document.getElementById('output').innerText = await res.text();
+    }
+  </script>
+</body>
+</html>

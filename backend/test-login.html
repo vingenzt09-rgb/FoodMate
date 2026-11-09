@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodMate Login Test</title>
+</head>
+<body>
+
+    <h2>FoodMate Login Test</h2>
+
+    <form id="loginForm">
+
+        <input
+            type="email"
+            id="email"
+            placeholder="Email"
+            required
+        >
+
+        <br><br>
+
+        <input
+            type="password"
+            id="password"
+            placeholder="Password"
+            required
+        >
+
+        <br><br>
+
+        <button type="submit">Login</button>
+
+    </form>
+
+    <p id="result"></p>
+
+    <script>
+        document.getElementById('loginForm')
+            .addEventListener('submit', async (event) => {
+
+            event.preventDefault();
+
+            const result = document.getElementById('result');
+
+            const user = {
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch('login.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(user)
+                });
+
+                const data = await response.json();
+
+                result.textContent = data.message;
+
+                if (data.success) {
+                    console.log('Logged in user:', data.user);
+                }
+
+            } catch (error) {
+                result.textContent = 'Could not connect to server.';
+            }
+        });
+    </script>
+
+</body>
+</html>

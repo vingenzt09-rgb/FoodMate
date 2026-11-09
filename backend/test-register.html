@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FoodMate Registration Test</title>
+</head>
+<body>
+
+    <h2>FoodMate Registration Test</h2>
+
+    <form id="registerForm">
+        <input
+            type="text"
+            id="name"
+            placeholder="Full Name"
+            required
+        >
+        <br><br>
+
+        <input
+            type="email"
+            id="email"
+            placeholder="Email"
+            required
+        >
+        <br><br>
+
+        <input
+            type="password"
+            id="password"
+            placeholder="Password (minimum 8 characters)"
+            required
+        >
+        <br><br>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <p id="result"></p>
+
+    <script>
+        document.getElementById('registerForm')
+            .addEventListener('submit', async (event) => {
+
+            event.preventDefault();
+
+            const result = document.getElementById('result');
+
+            const user = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch('register.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(user)
+                });
+
+                const data = await response.json();
+
+                result.textContent = data.message;
+
+            } catch (error) {
+                result.textContent = 'Could not connect to server.';
+            }
+        });
+    </script>
+
+</body>
+</html>
