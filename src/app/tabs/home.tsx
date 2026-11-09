@@ -183,25 +183,41 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <Pressable
-            onPress={handleLogout}
-            style={{
-              backgroundColor: '#FFF0E5',
-              paddingHorizontal: 16,
-              paddingVertical: 10,
-              borderRadius: 12,
-            }}
-          >
-            <Text
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Pressable
+              onPress={() => router.push('/add-recipe')}
               style={{
-                color: '#F47A35',
-                fontSize: 13,
-                fontWeight: 'bold',
+                backgroundColor: '#F47A35',
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 12,
               }}
             >
-              Logout
-            </Text>
-          </Pressable>
+              <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 'bold' }}>
+                + Add
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleLogout}
+              style={{
+                backgroundColor: '#FFF0E5',
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 12,
+              }}
+            >
+              <Text
+                style={{
+                  color: '#F47A35',
+                  fontSize: 13,
+                  fontWeight: 'bold',
+                }}
+              >
+                Logout
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.welcomeSection}>
@@ -282,7 +298,7 @@ export default function HomeScreen() {
                     {categoryMeta[featuredRecipe.category]?.emoji || '🍽️'}
                   </Text>
                 )}
-                
+
                 <Pressable
                   style={styles.favoritePosition}
                   onPress={(e) => handleToggleFavorite(featuredRecipe.id, e)}
@@ -360,7 +376,7 @@ export default function HomeScreen() {
                     ) : (
                       <Text style={styles.recipeEmoji}>{meta.emoji}</Text>
                     )}
-                    
+
                     <Pressable
                       style={styles.favoritePosition}
                       onPress={(e) => handleToggleFavorite(recipe.id, e)}
