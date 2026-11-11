@@ -1,16 +1,20 @@
-# 🍔 FoodMate - Android Recipe App
+# 🍔 FoodMate - Full-Stack Recipe & Community App
 
-FoodMate is a full-stack mobile application built with **React Native (Expo)** and a **PHP/MySQL** backend. It allows users to discover delicious recipes, search by category, view detailed cooking instructions, and save their favorite meals.
+FoodMate is a comprehensive mobile application built with **React Native (Expo)** and a **PHP/MySQL** backend. It allows users to discover recipes, track their daily nutrition, manage grocery lists, share food creations with a community, and much more.
 
-## ✨ Features
+## ✨ Key Features
 
-- **User Authentication:** Secure Register and Login using PHP `password_hash()` and `password_verify()`.
-- **Recipe Discovery:** Browse a list of recipes fetched dynamically from a MySQL database.
-- **Search & Filter:** Search recipes by name and filter by categories (Breakfast, Lunch, Dinner, Dessert).
-- **Recipe Details:** View prep/cook times, servings, ingredients, and step-by-step instructions.
-- **Favorites:** Save recipes to a personal favorites list (stored in the database).
-- **Explore Tab:** View all recipes and your personal favorites in one place.
-- **Modern UI:** Clean, responsive design with a warm orange/cream theme.
+- **User Authentication:** Secure Register, Login, and Logout using PHP `password_hash()` and `password_verify()`.
+- **Recipe Discovery:** Browse recipes fetched dynamically from a MySQL database with Search and Category filtering.
+- **Advanced Recipe Details:** View prep/cook times, ingredients, and step-by-step instructions. Includes a **Smart Serving Adjuster** that automatically scales ingredients and nutritional values based on the desired number of servings.
+- **Favorites:** Save and manage your favorite recipes.
+- **Smart Pantry Matching:** Add ingredients you have at home and find recipes you can cook right now (with match percentage).
+- **Grocery List:** Automatically generate a grocery list from a recipe or add items manually. Includes a "Clear All" feature.
+- **Nutrition Tracker:** Log your daily meals and track your Calorie, Protein, Carbs, and Fat intake.
+- **Community Feed:** Share your food creations with images and captions. Like and comment on other users' posts.
+- **Image Uploads:** Integrated `expo-image-picker` to allow users to take photos or choose from the gallery for recipes and community posts.
+- **Global Dark Mode:** A complete Dark/Light theme system implemented using React Context API.
+- **Modern UI/UX:** Smooth animations, horizontal/vertical scrolling, auto-scroll to categories, and a responsive layout.
 
 ## 🛠️ Tech Stack
 
@@ -18,7 +22,8 @@ FoodMate is a full-stack mobile application built with **React Native (Expo)** a
 - React Native (Expo)
 - TypeScript
 - Expo Router (File-based routing)
-- React Hooks (useState, useEffect, useMemo, useCallback)
+- React Context API (Theme management)
+- Expo Image Picker (Camera & Gallery access)
 - AsyncStorage (Local session management)
 
 **Backend (API):**
@@ -27,14 +32,37 @@ FoodMate is a full-stack mobile application built with **React Native (Expo)** a
 - JSON REST API
 - Prepared Statements (Security against SQL Injection)
 
+## 📂 Project Structure
+
+- FoodMate/
+- ├── src/ (React Native Frontend)
+- │   ├── app/ (Screens & Routing)
+- │   ├── components/ (Reusable UI)
+- │   ├── constants/ (API URL)
+- │   └── context/ (Dark Mode Context)
+- ├── backend/ (PHP API & Database)
+- │   ├── db.php (Database connection)
+- │   ├── register.php (Auth)
+- │   ├── login.php (Auth)
+- │   ├── recipes.php (Recipe CRUD)
+- │   ├── favorites.php (Favorites)
+- │   ├── ingredients.php (Pantry)
+- │   ├── matching.php (Recipe matching)
+- │   ├── grocery.php (Grocery list)
+- │   ├── nutrition.php (Food logging)
+- │   ├── community.php (Posts & Comments)
+- │   └── upload.php (Image upload handler)
+- └── README.md
+
 ## 🚀 How to Run Locally
 
 ### 1. Backend Setup (XAMPP)
 1. Install [XAMPP](https://www.apachefriends.org/) and start **Apache** and **MySQL**.
 2. Copy the `backend` folder into `C:\xampp\htdocs\` and rename it to `foodmate-api`.
-3. Open phpMyAdmin (or MySQL CLI) and create a database named `foodmate_db`.
-4. Create the required tables (users, recipes, favorites) using SQL commands.
-5. Update `backend/db.php` with your MySQL username and password.
+3. Create an `uploads` folder inside `foodmate-api` (for image uploads).
+4. Open phpMyAdmin (or MySQL CLI) and create a database named `foodmate_db`.
+5. Create the required tables (users, recipes, favorites, pantry_items, grocery_lists, food_logs, posts, comments, etc.).
+6. Update `backend/db.php` with your MySQL username and password.
 
 ### 2. Frontend Setup (Expo)
 1. Clone this repository.
@@ -42,9 +70,15 @@ FoodMate is a full-stack mobile application built with **React Native (Expo)** a
 3. Open `src/constants/api.ts` and update the `API_URL` to your computer's local IPv4 address (e.g., `http://192.168.1.100/foodmate-api`).
 4. Run `npx expo start` and scan the QR code with the Expo Go app on your Android device.
 
+## 🔮 Future Enhancements
+- [ ] Implement JWT (JSON Web Token) for secure API authentication.
+- [ ] Add push notifications for community interactions.
+- [ ] Implement an Admin Dashboard for content moderation.
+- [ ] Deploy the backend to a production server (e.g., AWS, DigitalOcean).
+
 ## 👨‍💻 Developer
-**Vinuka Wathsara Hettiarachchi**
-[LinkedIn Profile](www.linkedin.com/in/vinuka-hettiarachchi-b70109435)
+**Vinuka**
+- [LinkedIn Profile](https://www.linkedin.com/in/vinuka-hettiarachchi-b70109435/)
 
 
 ---
