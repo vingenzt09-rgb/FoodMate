@@ -38,7 +38,53 @@ type Recipe = {
 
 const splitLines = (text: string | null): string[] => {
   if (!text) return [];
-  return text.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+  
+  let cleanText = text
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+  
+  let lines = cleanText.split(/\r\n|\r|\n/).map((line) => line.trim()).filter((line) => line.length > 0);
+  
+  if (lines.length === 1 && cleanText.length > 20) {
+    lines = cleanText.split(',').map((line) => line.trim()).filter((line) => line.length > 0);
+  }
+  
+  return lines;
+};
+
+const parseInstructions = (text: string | null): string[] => {
+  if (!text) return [];
+  
+  let cleanText = text
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\n')
+    .trim();
+    
+  let rawLines = cleanText.split(/\r\n|\r|\n/).map((line) => line.trim()).filter((line) => line.length > 0);
+  
+  let processedLines: string[] = [];
+  
+  for (let line of rawLines) {
+    let cleanedLine = line
+      .replace(/^step\s*\d+\s*[:.-]?\s*/i, '') 
+      .replace(/^\d+\s*[:.)-]\s*/, '')         
+      .trim();
+      
+    if (cleanedLine.length === 0) continue;
+    if (/^\d+$/.test(cleanedLine) || /^step$/i.test(cleanedLine)) continue;
+    
+    processedLines.push(cleanedLine);
+  }
+  
+  if (processedLines.length === 1 && processedLines[0].length > 100) {
+    processedLines = processedLines[0].split(/(?<=[.!?])\s+/).map((line) => line.trim()).filter((line) => line.length > 0);
+  }
+  
+  return processedLines;
 };
 
 const scaleIngredient = (ingredient: string, scale: number) => {
@@ -170,7 +216,7 @@ export default function RecipeDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await AsyncStorage.multiRemove(['userName', 'userId', 'userEmail']);
+              await AsyncStorage.multiRemove(['userName', 'userId', 'userEmail', 'rememberMe', 'loginTime']);
               router.replace('/');
             } catch (error) {
               console.log('Logout error:', error);
@@ -208,9 +254,8 @@ export default function RecipeDetailScreen() {
   }
 
   const scale = selectedServings / (recipe.servings || 1);
-  const total = recipe.prep_time_minutes + recipe.cook_time_minutes;
   const ingredientList = splitLines(recipe.ingredients);
-  const instructionList = splitLines(recipe.instructions);
+  const instructionList = parseInstructions(recipe.instructions);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -346,7 +391,7 @@ export default function RecipeDetailScreen() {
             <View style={styles.card}>
               {ingredientList.map((ingredient, index) => (
                 <View key={index} style={styles.ingredientRow}>
-                  <View style={styles.bullet} />
+                  <View style={styles.bulletDot} />
                   <Text style={styles.ingredientText}>{scaleIngredient(ingredient, scale)}</Text>
                 </View>
               ))}
@@ -367,7 +412,7 @@ export default function RecipeDetailScreen() {
             <View style={styles.card}>
               {instructionList.map((step, index) => (
                 <View key={index} style={styles.stepRow}>
-                  <View style={styles.stepNumber}>
+                  <View style={styles.stepNumberCircle}>
                     <Text style={styles.stepNumberText}>{index + 1}</Text>
                   </View>
                   <Text style={styles.stepText}>{step}</Text>
@@ -465,13 +510,16 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   logBtn: { backgroundColor: '#2E7D32', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 15 },
   logBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' },
   card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0.2 : 0.03, shadowRadius: 5, elevation: 1 },
-  ingredientRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-  bullet: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary, marginTop: 7, marginRight: 12 },
-  ingredientText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 21 },
-  addGroceryBtn: { marginTop: 15, paddingVertical: 10, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border },
+  
+  ingredientRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8 },
+  bulletDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 7, marginRight: 12 },
+  ingredientText: { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
+  
+  addGroceryBtn: { marginTop: 15, paddingVertical: 12, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border },
   addGroceryText: { color: colors.primary, fontWeight: 'bold', fontSize: 14 },
-  stepRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-  stepNumber: { width: 26, height: 26, borderRadius: 13, backgroundColor: isDark ? '#333' : '#FFF0E5', justifyContent: 'center', alignItems: 'center', marginRight: 12, marginTop: 1 },
-  stepNumberText: { color: colors.primary, fontWeight: 'bold', fontSize: 13 },
-  stepText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 21 },
+  
+  stepRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10 },
+  stepNumberCircle: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 12, marginTop: 0 },
+  stepNumberText: { fontSize: 13, fontWeight: 'bold', color: '#FFFFFF' },
+  stepText: { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
 });

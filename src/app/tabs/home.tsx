@@ -6,17 +6,17 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  FlatList,
   Image,
   Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RecipeImage from '../../components/RecipeImage';
@@ -67,7 +67,7 @@ export default function HomeScreen() {
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
   const [userRole, setUserRole] = useState('user');
 
-  const scrollViewRef = useRef<any>(null);
+  const flatListRef = useRef<FlatList>(null);
   const recipesListY = useRef(0);
   const menuAnim = useRef(new Animated.Value(0)).current;
   const listFadeAnim = useRef(new Animated.Value(0)).current;
@@ -123,15 +123,15 @@ export default function HomeScreen() {
   };
 
   const scrollToTop = () => {
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
   const handleCategoryPress = (categoryName: string) => {
     setSelectedCategory(categoryName);
     
     setTimeout(() => {
-      scrollViewRef.current?.scrollTo({ 
-        y: recipesListY.current - 40, 
+      flatListRef.current?.scrollToOffset({ 
+        offset: recipesListY.current - 40, 
         animated: true 
       });
     }, 100);
@@ -240,6 +240,188 @@ export default function HomeScreen() {
     );
   };
 
+  const renderHeader = () => (
+    <>
+      <View style={styles.header}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Image 
+            source={require('../../../assets/icon.png')} 
+            style={styles.appLogoImage} 
+            resizeMode="contain"
+          />
+          <View>
+            <Text style={styles.greeting}>Hello, {displayName} 👋</Text>
+            <Text style={styles.logo}>
+              Food<Text style={styles.logoOrange}>Mate</Text>
+            </Text>
+          </View>
+        </View>
+        
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Pressable onPress={() => router.push('/profile')} style={styles.menuButton}>
+            <Ionicons name="person-outline" size={22} color={colors.primary} />
+          </Pressable>
+          <Pressable onPress={toggleTheme} style={styles.menuButton}>
+            <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={22} color={colors.primary} />
+          </Pressable>
+          <Pressable onPress={() => toggleMenu(true)} style={styles.menuButton}>
+            <Feather name="menu" size={22} color={colors.primary} />
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.welcomeSection}>
+        <Text style={styles.heading}>What would you like{'\n'}to cook today?</Text>
+        <Text style={styles.subheading}>Find the perfect recipe for your day.</Text>
+      </View>
+
+      <View style={[styles.searchBoxContainer, { zIndex: 10 }]}>
+        <View style={styles.searchBox}>
+          <Feather name="search" size={20} color={colors.subText} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search recipes..."
+            placeholderTextColor={colors.subText}
+            value={search}
+            onChangeText={(text) => {
+              setSearch(text);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')} style={{ padding: 5 }}>
+              <Feather name="x-circle" size={18} color={colors.subText} />
+            </Pressable>
+          )}
+        </View>
+
+        {showSuggestions && search.length > 0 && suggestions.length > 0 && (
+          <View style={styles.suggestionBox}>
+            {suggestions.map((item) => (
+              <Pressable
+                key={item.id}
+                style={styles.suggestionItem}
+                onPressIn={() => {
+                  setSearch(item.title);
+                  setShowSuggestions(false);
+                  router.push({ pathname: '/recipe/[id]', params: { id: item.id } });
+                }}
+              >
+                <Feather name="search" size={16} color={colors.subText} style={{ marginRight: 10 }} />
+                <Text style={styles.suggestionText} numberOfLines={1}>
+                  {item.title}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Categories</Text>
+        <Pressable 
+          onPress={() => setIsCategoriesExpanded(!isCategoriesExpanded)} 
+          style={styles.expandButton}
+        >
+          <Text style={styles.expandText}>
+            {isCategoriesExpanded ? 'See Less' : 'See All'}
+          </Text>
+          <Feather 
+            name={isCategoriesExpanded ? 'chevron-up' : 'chevron-down'} 
+            size={16} 
+            color={colors.primary} 
+          />
+        </Pressable>
+      </View>
+
+      <View style={styles.categoryGrid}>
+        {displayedCategories.map((category) => {
+          const isSelected = selectedCategory === category.name;
+          return (
+            <Pressable
+              key={category.name}
+              onPress={() => handleCategoryPress(category.name)}
+              style={[styles.categoryItem, isSelected && styles.selectedCategory]}
+            >
+              <Ionicons 
+                name={category.icon as any} 
+                size={24} 
+                color={isSelected ? '#FFFFFF' : colors.primary} 
+                style={{ marginBottom: 6 }} 
+              />
+              <Text style={[styles.categoryText, isSelected && styles.selectedCategoryText]}>
+                {category.name}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {featuredRecipe && (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Featured Recipe</Text>
+            <Text style={styles.viewAll}>Discover</Text>
+          </View>
+
+          <Pressable
+            style={styles.featuredCard}
+            onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: featuredRecipe.id } })}
+          >
+            <View style={styles.featuredImage}>
+              <RecipeImage
+                uri={featuredRecipe.image_url}
+                style={styles.featuredActualImage}
+                color={colors.border}
+                emoji="🍽️"
+                emojiStyle={styles.featuredEmoji}
+              />
+              <Pressable
+                style={styles.favoritePosition}
+                onPress={(e) => handleToggleFavorite(featuredRecipe.id, e)}
+              >
+                <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                  <Ionicons 
+                    name={favoriteIds.includes(featuredRecipe.id) ? 'heart' : 'heart-outline'} 
+                    size={28} 
+                    color={favoriteIds.includes(featuredRecipe.id) ? colors.primary : '#FFFFFF'} 
+                  />
+                </Animated.View>
+              </Pressable>
+            </View>
+
+            <View style={styles.featuredInfo}>
+              <Text style={styles.featuredTag}>TODAY'S SPECIAL</Text>
+              <Text style={styles.featuredTitle}>{featuredRecipe.title}</Text>
+              <Text style={styles.featuredDescription} numberOfLines={2}>
+                {featuredRecipe.description}
+              </Text>
+              <View style={styles.featuredMetaRow}>
+                <Feather name="clock" size={14} color={colors.subText} />
+                <Text style={styles.featuredTime}>{totalTime(featuredRecipe)} min</Text>
+              </View>
+            </View>
+          </Pressable>
+        </>
+      )}
+
+      <View 
+        onLayout={(event) => {
+          recipesListY.current = event.nativeEvent.layout.y;
+        }}
+      >
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            {selectedCategory === 'All' ? 'Popular Recipes' : `${selectedCategory} Recipes`}
+          </Text>
+          <Text style={styles.viewAll}>{filteredRecipes.length} recipes</Text>
+        </View>
+      </View>
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -299,239 +481,23 @@ export default function HomeScreen() {
       </Modal>
 
       <Animated.View style={{ flex: 1, opacity: listFadeAnim }}>
-        <ScrollView 
-          ref={scrollViewRef}
-          showsVerticalScrollIndicator={false} 
+        <FlatList
+          ref={flatListRef}
+          data={isLoading ? [] : filteredRecipes}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          ListHeaderComponent={renderHeader}
+          columnWrapperStyle={styles.recipeGrid}
           contentContainerStyle={styles.container}
           onScroll={handleScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.header}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Image 
-                source={require('../../../assets/icon.png')} 
-                style={styles.appLogoImage} 
-                resizeMode="contain"
-              />
-              <View>
-                <Text style={styles.greeting}>Hello, {displayName} 👋</Text>
-                <Text style={styles.logo}>
-                  Food<Text style={styles.logoOrange}>Mate</Text>
-                </Text>
-              </View>
-            </View>
-            
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Pressable onPress={() => router.push('/profile')} style={styles.menuButton}>
-                <Ionicons name="person-outline" size={22} color={colors.primary} />
-              </Pressable>
-              <Pressable onPress={toggleTheme} style={styles.menuButton}>
-                <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={22} color={colors.primary} />
-              </Pressable>
-              <Pressable onPress={() => toggleMenu(true)} style={styles.menuButton}>
-                <Feather name="menu" size={22} color={colors.primary} />
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={styles.welcomeSection}>
-            <Text style={styles.heading}>What would you like{'\n'}to cook today?</Text>
-            <Text style={styles.subheading}>Find the perfect recipe for your day.</Text>
-          </View>
-
-          <View style={[styles.searchBoxContainer, { zIndex: 10 }]}>
-            <View style={styles.searchBox}>
-              <Feather name="search" size={20} color={colors.subText} style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search recipes..."
-                placeholderTextColor={colors.subText}
-                value={search}
-                onChangeText={(text) => {
-                  setSearch(text);
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              />
-              {search.length > 0 && (
-                <Pressable onPress={() => setSearch('')} style={{ padding: 5 }}>
-                  <Feather name="x-circle" size={18} color={colors.subText} />
-                </Pressable>
-              )}
-            </View>
-
-            {showSuggestions && search.length > 0 && suggestions.length > 0 && (
-              <View style={styles.suggestionBox}>
-                {suggestions.map((item) => (
-                  <Pressable
-                    key={item.id}
-                    style={styles.suggestionItem}
-                    onPressIn={() => {
-                      setSearch(item.title);
-                      setShowSuggestions(false);
-                      router.push({ pathname: '/recipe/[id]', params: { id: item.id } });
-                    }}
-                  >
-                    <Feather name="search" size={16} color={colors.subText} style={{ marginRight: 10 }} />
-                    <Text style={styles.suggestionText} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Categories</Text>
-            <Pressable 
-              onPress={() => setIsCategoriesExpanded(!isCategoriesExpanded)} 
-              style={styles.expandButton}
-            >
-              <Text style={styles.expandText}>
-                {isCategoriesExpanded ? 'See Less' : 'See All'}
-              </Text>
-              <Feather 
-                name={isCategoriesExpanded ? 'chevron-up' : 'chevron-down'} 
-                size={16} 
-                color={colors.primary} 
-              />
-            </Pressable>
-          </View>
-
-          <View style={styles.categoryGrid}>
-            {displayedCategories.map((category) => {
-              const isSelected = selectedCategory === category.name;
-              return (
-                <Pressable
-                  key={category.name}
-                  onPress={() => handleCategoryPress(category.name)}
-                  style={[styles.categoryItem, isSelected && styles.selectedCategory]}
-                >
-                  <Ionicons 
-                    name={category.icon as any} 
-                    size={24} 
-                    color={isSelected ? '#FFFFFF' : colors.primary} 
-                    style={{ marginBottom: 6 }} 
-                  />
-                  <Text style={[styles.categoryText, isSelected && styles.selectedCategoryText]}>
-                    {category.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {featuredRecipe && (
-            <>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Featured Recipe</Text>
-                <Text style={styles.viewAll}>Discover</Text>
-              </View>
-
-              <Pressable
-                style={styles.featuredCard}
-                onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: featuredRecipe.id } })}
-              >
-                <View style={styles.featuredImage}>
-                  <RecipeImage
-                    uri={featuredRecipe.image_url}
-                    style={styles.featuredActualImage}
-                    color={colors.border}
-                    emoji="🍽️"
-                    emojiStyle={styles.featuredEmoji}
-                  />
-                  <Pressable
-                    style={styles.favoritePosition}
-                    onPress={(e) => handleToggleFavorite(featuredRecipe.id, e)}
-                  >
-                    <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-                      <Ionicons 
-                        name={favoriteIds.includes(featuredRecipe.id) ? 'heart' : 'heart-outline'} 
-                        size={28} 
-                        color={favoriteIds.includes(featuredRecipe.id) ? colors.primary : '#FFFFFF'} 
-                      />
-                    </Animated.View>
-                  </Pressable>
-                </View>
-
-                <View style={styles.featuredInfo}>
-                  <Text style={styles.featuredTag}>TODAY'S SPECIAL</Text>
-                  <Text style={styles.featuredTitle}>{featuredRecipe.title}</Text>
-                  <Text style={styles.featuredDescription} numberOfLines={2}>
-                    {featuredRecipe.description}
-                  </Text>
-                  <View style={styles.featuredMetaRow}>
-                    <Feather name="clock" size={14} color={colors.subText} />
-                    <Text style={styles.featuredTime}>{totalTime(featuredRecipe)} min</Text>
-                  </View>
-                </View>
-              </Pressable>
-            </>
-          )}
-
-          <View 
-            onLayout={(event) => {
-              recipesListY.current = event.nativeEvent.layout.y;
-            }}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                {selectedCategory === 'All' ? 'Popular Recipes' : `${selectedCategory} Recipes`}
-              </Text>
-              <Text style={styles.viewAll}>{filteredRecipes.length} recipes</Text>
-            </View>
-
-            {isLoading ? (
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            isLoading ? (
               <View style={styles.emptyState}>
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={styles.emptyText}>Loading recipes...</Text>
-              </View>
-            ) : filteredRecipes.length > 0 ? (
-              <View style={styles.recipeGrid}>
-                {filteredRecipes.map((recipe) => {
-                  const isFav = favoriteIds.includes(recipe.id);
-                  return (
-                    <Pressable
-                      key={recipe.id}
-                      style={styles.recipeCard}
-                      onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
-                    >
-                      <View style={styles.recipeImageContainer}>
-                        <RecipeImage
-                          uri={recipe.image_url}
-                          style={styles.recipeActualImage}
-                          color={colors.border}
-                          emoji="🍽️"
-                          emojiStyle={styles.recipeEmoji}
-                        />
-                        <Pressable
-                          style={styles.favoritePositionSmall}
-                          onPress={(e) => handleToggleFavorite(recipe.id, e)}
-                        >
-                          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-                            <Ionicons 
-                              name={isFav ? 'heart' : 'heart-outline'} 
-                              size={24} 
-                              color={isFav ? colors.primary : '#FFFFFF'} 
-                            />
-                          </Animated.View>
-                        </Pressable>
-                      </View>
-
-                      <View style={styles.recipeInfo}>
-                        <Text style={styles.recipeName} numberOfLines={1}>{recipe.title}</Text>
-                        <Text style={styles.recipeCategory}>{recipe.category}</Text>
-                        <View style={styles.recipeMetaRow}>
-                          <Feather name="clock" size={12} color={colors.primary} />
-                          <Text style={styles.recipeTime}>{totalTime(recipe)} min</Text>
-                        </View>
-                      </View>
-                    </Pressable>
-                  );
-                })}
               </View>
             ) : (
               <View style={styles.emptyState}>
@@ -539,11 +505,52 @@ export default function HomeScreen() {
                 <Text style={styles.emptyTitle}>No recipes found</Text>
                 <Text style={styles.emptyText}>Try another search or category.</Text>
               </View>
-            )}
-          </View>
+            )
+          }
+          ListFooterComponent={
+            <Text style={styles.bottomMessage}>Made with ❤️ for food lovers</Text>
+          }
+          renderItem={({ item: recipe }) => {
+            const isFav = favoriteIds.includes(recipe.id);
+            return (
+              <Pressable
+                style={styles.recipeCard}
+                onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
+              >
+                <View style={styles.recipeImageContainer}>
+                  <RecipeImage
+                    uri={recipe.image_url}
+                    style={styles.recipeActualImage}
+                    color={colors.border}
+                    emoji="🍽️"
+                    emojiStyle={styles.recipeEmoji}
+                  />
+                  <Pressable
+                    style={styles.favoritePositionSmall}
+                    onPress={(e) => handleToggleFavorite(recipe.id, e)}
+                  >
+                    <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                      <Ionicons 
+                        name={isFav ? 'heart' : 'heart-outline'} 
+                        size={24} 
+                        color={isFav ? colors.primary : '#FFFFFF'} 
+                      />
+                    </Animated.View>
+                  </Pressable>
+                </View>
 
-          <Text style={styles.bottomMessage}>Made with ❤️ for food lovers</Text>
-        </ScrollView>
+                <View style={styles.recipeInfo}>
+                  <Text style={styles.recipeName} numberOfLines={1}>{recipe.title}</Text>
+                  <Text style={styles.recipeCategory}>{recipe.category}</Text>
+                  <View style={styles.recipeMetaRow}>
+                    <Feather name="clock" size={12} color={colors.primary} />
+                    <Text style={styles.recipeTime}>{totalTime(recipe)} min</Text>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          }}
+        />
       </Animated.View>
 
       {showScrollTop && (
@@ -718,7 +725,8 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   featuredDescription: { fontSize: 13, color: colors.subText, marginTop: 6, lineHeight: 18 },
   featuredMetaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, gap: 6 },
   featuredTime: { fontSize: 13, color: colors.subText, fontWeight: '600' },
-  recipeGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  
+  recipeGrid: { justifyContent: 'space-between' },
   recipeCard: {
     width: '48%',
     backgroundColor: colors.card,
@@ -739,10 +747,10 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   recipeCategory: { fontSize: 12, color: colors.subText, marginTop: 4, fontWeight: '500' },
   recipeMetaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 5 },
   recipeTime: { fontSize: 12, color: colors.primary, fontWeight: '700' },
-  emptyState: { alignItems: 'center', padding: 30 },
+  emptyState: { alignItems: 'center', padding: 30, marginTop: 20 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 15 },
   emptyText: { fontSize: 14, color: colors.subText, marginTop: 6 },
-  bottomMessage: { textAlign: 'center', fontSize: 13, color: colors.subText, marginTop: 30, fontWeight: '500' },
+  bottomMessage: { textAlign: 'center', fontSize: 13, color: colors.subText, marginTop: 20, marginBottom: 20, fontWeight: '500' },
   scrollTopContainer: {
     position: 'absolute',
     bottom: 30,
