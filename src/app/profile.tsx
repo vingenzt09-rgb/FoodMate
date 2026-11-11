@@ -1,21 +1,21 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../constants/api';
@@ -150,6 +150,28 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove(['userName', 'userId', 'userEmail', 'rememberMe', 'loginTime']);
+              router.replace('/');
+            } catch (error) {
+              console.log('Logout error:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -218,6 +240,11 @@ export default function ProfileScreen() {
             <Pressable style={styles.saveButton} onPress={handleSave} disabled={isSaving || isUploading}>
               {isSaving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveButtonText}>Save Changes</Text>}
             </Pressable>
+
+            <Pressable style={styles.logoutButton} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={20} color="#D32F2F" />
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -260,6 +287,23 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 8, marginTop: 15 },
   input: { backgroundColor: colors.inputBg, borderRadius: 10, paddingHorizontal: 15, paddingVertical: 12, fontSize: 15, color: colors.text },
   disabledInput: { backgroundColor: isDark ? '#222' : '#E0E0E0', color: colors.subText },
-  saveButton: { backgroundColor: colors.primary, borderRadius: 14, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 40, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  saveButton: { backgroundColor: colors.primary, borderRadius: 14, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 30, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   saveButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  logoutButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: isDark ? '#3E1C1C' : '#FFEBEE',
+    borderRadius: 14,
+    height: 54,
+    marginTop: 15,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: isDark ? '#5A2A2A' : '#FFCDD2',
+  },
+  logoutButtonText: {
+    color: '#D32F2F',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
