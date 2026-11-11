@@ -1,347 +1,122 @@
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Image,
   Pressable,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  View
+  View,
 } from 'react-native';
-
-import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 
 export default function WelcomeScreen() {
-  const handleGetStarted = () => {
-  router.push('/register');
-};
+  const { isDark, colors } = useTheme();
+  const styles = getStyles(colors, isDark);
+  const [isChecking, setIsChecking] = useState(true);
 
-  const handleLogin = () => {
-  router.push('/login');
-};
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const storedId = await AsyncStorage.getItem('userId');
+        const storedTime = await AsyncStorage.getItem('loginTime');
+        
+        if (storedId && storedTime) {
+          const currentTime = Date.now();
+          const loginTime = parseInt(storedTime, 10);
+          const hoursDifference = (currentTime - loginTime) / (1000 * 60 * 60);
+
+          if (hoursDifference > 24) {
+            await AsyncStorage.multiRemove(['userName', 'userId', 'userEmail', 'rememberMe', 'loginTime']);
+            setIsChecking(false);
+            return;
+          }
+
+          const hasHardware = await LocalAuthentication.hasHardwareAsync();
+          const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+          if (hasHardware && isEnrolled) {
+            const result = await LocalAuthentication.authenticateAsync({
+              promptMessage: 'Login to FoodMate',
+              fallbackLabel: 'Use Password',
+            });
+
+            if (result.success) {
+              router.replace('/tabs/home');
+            }
+          } else {
+            router.replace('/tabs/home');
+          }
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkSession();
+  }, []);
+
+  if (isChecking) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFAF5" />
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoIcon}>🍴</Text>
-          </View>
-
-          <Text style={styles.logoText}>FoodMate</Text>
-        </View>
-
-        {/* Introduction */}
-        <View style={styles.intro}>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>
-              COOK • EXPLORE • ENJOY
-            </Text>
-          </View>
-
-          <Text style={styles.title}>
-            Make Every Meal
-            {'\n'}
-            <Text style={styles.orangeText}>
-              Special.
-            </Text>
-          </Text>
-
-          <Text style={styles.description}>
-            Discover delicious recipes, explore new flavours
-            and bring happiness to your kitchen.
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      
+      <View style={styles.container}>
+        <View style={styles.topSection}>
+          <Image 
+            source={require('../../assets/icon.png')} 
+            style={styles.logoImage} 
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>FoodMate</Text>
+          <Text style={styles.subtitle}>
+            Discover delicious recipes, track your nutrition, and share your culinary creations.
           </Text>
         </View>
 
-        {/* Food Illustration */}
-        <View style={styles.heroCard}>
-          <View style={styles.decorCircle} />
-
-          <View style={styles.foodCircle}>
-            <Text style={styles.foodEmoji}>🍲</Text>
-          </View>
-
-          <View style={styles.smallFood}>
-            <Text style={styles.smallFoodEmoji}>🥑</Text>
-          </View>
-
-          <View style={styles.recipeBadge}>
-            <Text style={styles.badgeEmoji}>✨</Text>
-            <Text style={styles.badgeText}>
-              Delicious Ideas
-            </Text>
-          </View>
-
-          <View style={styles.bottomBadge}>
-            <Text style={styles.bottomBadgeText}>
-              ❤️ Made with love
-            </Text>
-          </View>
-        </View>
-
-        {/* Buttons */}
-        <View style={styles.buttonSection}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.primaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleGetStarted}
+        <View style={styles.bottomSection}>
+          <Pressable 
+            style={styles.primaryButton} 
+            onPress={() => router.push('/register')}
           >
-            <Text style={styles.primaryButtonText}>
-              Get Started
-            </Text>
-            <Text style={styles.arrow}>→</Text>
+            <Text style={styles.primaryButtonText}>Get Started</Text>
           </Pressable>
 
-          <Pressable
-            style={styles.loginButton}
-            onPress={handleLogin}
+          <Pressable 
+            style={styles.secondaryButton} 
+            onPress={() => router.push('/login')}
           >
-            <Text style={styles.loginText}>
-              Already have an account?{' '}
-              <Text style={styles.loginHighlight}>
-                Login
-              </Text>
-            </Text>
+            <Text style={styles.secondaryButtonText}>I already have an account</Text>
           </Pressable>
         </View>
-
-        <Text style={styles.footer}>
-          GOOD FOOD. GOOD MOOD. ❤️
-        </Text>
-
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFAF5',
-  },
-
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 25,
-    paddingTop: 15,
-    paddingBottom: 20,
-  },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 30,
-  },
-
-  logoBox: {
-    width: 43,
-    height: 43,
-    borderRadius: 14,
-    backgroundColor: '#F47A35',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  logoIcon: {
-    fontSize: 24,
-  },
-
-  logoText: {
-    fontSize: 23,
-    fontWeight: '800',
-    color: '#30241F',
-    letterSpacing: -0.7,
-  },
-
-  intro: {
-    marginBottom: 22,
-  },
-
-  tag: {
-    backgroundColor: '#FFF0E5',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    marginBottom: 17,
-  },
-
-  tagText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#E96F28',
-    letterSpacing: 1.2,
-  },
-
-  title: {
-    fontSize: 39,
-    fontWeight: '900',
-    color: '#30241F',
-    lineHeight: 47,
-    letterSpacing: -1.4,
-  },
-
-  orangeText: {
-    color: '#F47A35',
-  },
-
-  description: {
-    fontSize: 14,
-    lineHeight: 23,
-    color: '#8C817A',
-    marginTop: 13,
-    maxWidth: 310,
-  },
-
-  heroCard: {
-    height: 255,
-    backgroundColor: '#FFE8D5',
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    marginBottom: 25,
-  },
-
-  decorCircle: {
-    position: 'absolute',
-    width: 215,
-    height: 215,
-    borderRadius: 110,
-    backgroundColor: '#FFD4B5',
-  },
-
-  foodCircle: {
-    width: 175,
-    height: 175,
-    borderRadius: 90,
-    backgroundColor: '#FFFAF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 7,
-  },
-
-  foodEmoji: {
-    fontSize: 105,
-  },
-
-  smallFood: {
-    position: 'absolute',
-    top: 35,
-    right: 35,
-    width: 53,
-    height: 53,
-    borderRadius: 27,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  smallFoodEmoji: {
-    fontSize: 29,
-  },
-
-  recipeBadge: {
-    position: 'absolute',
-    left: 15,
-    top: 35,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 11,
-    paddingVertical: 9,
-    borderRadius: 20,
-  },
-
-  badgeEmoji: {
-    fontSize: 13,
-    marginRight: 5,
-  },
-
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#30241F',
-  },
-
-  bottomBadge: {
-    position: 'absolute',
-    bottom: 15,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-
-  bottomBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#6B5142',
-  },
-
-  buttonSection: {
-    gap: 13,
-  },
-
-  primaryButton: {
-    height: 57,
-    backgroundColor: '#F47A35',
-    borderRadius: 17,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-  },
-
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-
-  arrow: {
-    position: 'absolute',
-    right: 22,
-    fontSize: 23,
-    color: '#FFFFFF',
-  },
-
-  buttonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
-
-  loginButton: {
-    height: 45,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  loginText: {
-    fontSize: 13,
-    color: '#8C817A',
-  },
-
-  loginHighlight: {
-    color: '#F47A35',
-    fontWeight: '800',
-  },
-
-  footer: {
-    textAlign: 'center',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 2,
-    color: '#B7A79C',
-    marginTop: 15,
-  },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, paddingHorizontal: 30, justifyContent: 'space-between', paddingVertical: 50 },
+  topSection: { alignItems: 'center', marginTop: 40 },
+  logoImage: { width: 120, height: 120, borderRadius: 30, marginBottom: 20 },
+  title: { fontSize: 36, fontWeight: '800', color: colors.text, letterSpacing: -1 },
+  subtitle: { fontSize: 15, color: colors.subText, textAlign: 'center', marginTop: 15, lineHeight: 22 },
+  bottomSection: { gap: 15 },
+  primaryButton: { backgroundColor: colors.primary, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  primaryButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  secondaryButton: { backgroundColor: colors.card, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  secondaryButtonText: { color: colors.text, fontSize: 16, fontWeight: 'bold' },
 });

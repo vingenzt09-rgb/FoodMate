@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Image,
   Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -64,6 +65,7 @@ export default function HomeScreen() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
+  const [userRole, setUserRole] = useState('user');
 
   const scrollViewRef = useRef<any>(null);
   const recipesListY = useRef(0);
@@ -77,6 +79,14 @@ export default function HomeScreen() {
         const storedName = await AsyncStorage.getItem('userName');
         const storedId = await AsyncStorage.getItem('userId');
         if (storedName) setSavedName(storedName);
+
+        if (storedId) {
+          const profileRes = await fetch(`${API_URL}/profile.php?user_id=${storedId}`);
+          const profileData = await profileRes.json();
+          if (profileData.success) {
+            setUserRole(profileData.user.role);
+          }
+        }
 
         const recipeRes = await fetch(`${API_URL}/recipes.php`);
         const recipeData = await recipeRes.json();
@@ -219,7 +229,7 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await AsyncStorage.multiRemove(['userName', 'userId', 'userEmail']);
+              await AsyncStorage.multiRemove(['userName', 'userId', 'userEmail', 'rememberMe', 'loginTime']);
               router.replace('/');
             } catch (error) {
               console.log('Logout error:', error);
@@ -245,6 +255,16 @@ export default function HomeScreen() {
               },
             ]}
           >
+            {userRole === 'admin' && (
+              <Pressable style={styles.menuItem} onPress={() => { toggleMenu(false); router.push('/admin'); }}>
+                <Ionicons name="shield-checkmark-outline" size={20} color="#D32F2F" style={styles.menuIcon} />
+                <Text style={[styles.menuText, { color: '#D32F2F' }]}>Admin Panel</Text>
+              </Pressable>
+            )}
+            <Pressable style={styles.menuItem} onPress={() => { toggleMenu(false); router.push('/profile'); }}>
+              <Ionicons name="person-outline" size={20} color={colors.text} style={styles.menuIcon} />
+              <Text style={styles.menuText}>My Profile</Text>
+            </Pressable>
             <Pressable style={styles.menuItem} onPress={() => { toggleMenu(false); router.push('/favorites'); }}>
               <Ionicons name="heart-outline" size={20} color={colors.text} style={styles.menuIcon} />
               <Text style={styles.menuText}>My Favorites</Text>
@@ -288,22 +308,29 @@ export default function HomeScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>Hello, {displayName} 👋</Text>
-              <Text style={styles.logo}>
-                Food<Text style={styles.logoOrange}>Mate</Text>
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Image 
+                source={require('../../../assets/icon.png')} 
+                style={styles.appLogoImage} 
+                resizeMode="contain"
+              />
+              <View>
+                <Text style={styles.greeting}>Hello, {displayName} 👋</Text>
+                <Text style={styles.logo}>
+                  Food<Text style={styles.logoOrange}>Mate</Text>
+                </Text>
+              </View>
             </View>
             
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Pressable onPress={() => router.push('/favorites')} style={styles.menuButton}>
-                <Ionicons name="heart-outline" size={24} color={colors.primary} />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable onPress={() => router.push('/profile')} style={styles.menuButton}>
+                <Ionicons name="person-outline" size={22} color={colors.primary} />
               </Pressable>
               <Pressable onPress={toggleTheme} style={styles.menuButton}>
-                <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={24} color={colors.primary} />
+                <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={22} color={colors.primary} />
               </Pressable>
               <Pressable onPress={() => toggleMenu(true)} style={styles.menuButton}>
-                <Feather name="menu" size={24} color={colors.primary} />
+                <Feather name="menu" size={22} color={colors.primary} />
               </Pressable>
             </View>
           </View>
@@ -535,13 +562,14 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   container: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 30 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  appLogoImage: { width: 45, height: 45, borderRadius: 12 },
   greeting: { fontSize: 14, color: colors.subText, fontWeight: '500' },
   logo: { fontSize: 28, fontWeight: '800', color: colors.text, marginTop: 2, letterSpacing: -0.5 },
   logoOrange: { color: colors.primary },
   menuButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
