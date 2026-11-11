@@ -18,7 +18,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F47A35"
       },
-      "package": "com.vinuka.foodmate"
+      "package": "com.vinuka.foodmate",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,6 +42,16 @@
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "f32e1678-0f13-45fc-8c3b-0e8d65930950"
+      }
+    }
   }
 }
