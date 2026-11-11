@@ -13,7 +13,6 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
 require_once __DIR__ . "/db.php";
 
 try {
-    // === POST: Add a new recipe ===
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -24,48 +23,62 @@ try {
         $prep = (int) ($data["prep_time_minutes"] ?? 0);
         $cook = (int) ($data["cook_time_minutes"] ?? 0);
         $servings = (int) ($data["servings"] ?? 1);
-        $ingredients = trim($data["ingredients"] ?? "");
+        $ingredientsText = trim($data["ingredients"] ?? "");
         $instructions = trim($data["instructions"] ?? "");
+        $calories = (int) ($data["calories"] ?? 0);
+        $protein = (float) ($data["protein"] ?? 0.0);
+        $carbs = (float) ($data["carbs"] ?? 0.0);
+        $fat = (float) ($data["fat"] ?? 0.0);
 
-        if ($title === "" || $category === "" || $ingredients === "" || $instructions === "") {
+        if ($title === "" || $category === "" || $ingredientsText === "" || $instructions === "") {
             http_response_code(400);
-            echo json_encode([
-                "success" => false,
-                "message" => "Title, category, ingredients, and instructions are required."
-            ]);
+            echo json_encode(["success" => false, "message" => "Required fields missing."]);
             exit;
         }
 
         $stmt = $conn->prepare(
-            "INSERT INTO recipes (title, description, category, image_url, prep_time_minutes, cook_time_minutes, servings, ingredients, instructions, is_featured)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)"
+            "INSERT INTO recipes (title, description, category, image_url, prep_time_minutes, cook_time_minutes, servings, ingredients, instructions, is_featured, calories, protein, carbs, fat)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)"
         );
         
-        $stmt->bind_param("ssssiiiss", $title, $description, $category, $image_url, $prep, $cook, $servings, $ingredients, $instructions);
+        $stmt->bind_param("ssssiiissd ddd", $title, $description, $category, $image_url, $prep, $cook, $servings, $ingredientsText, $instructions, $calories, $protein, $carbs, $fat);
         $stmt->execute();
         $newId = $conn->insert_id;
         $stmt->close();
 
+        $ingredientLines = explode("\n", $ingredientsText);
+        foreach ($ingredientLines as $line) {
+            $line = trim($line);
+            if (!empty($line)) {
+                $ingStmt = $conn->prepare("INSERT IGNORE INTO ingredients (name) VALUES (?)");
+                $ingStmt->bind_param("s", $line);
+                $ingStmt->execute();
+                $ingStmt->close();
+                
+                $getIng = $conn->prepare("SELECT id FROM ingredients WHERE name = ?");
+                $getIng->bind_param("s", $line);
+                $getIng->execute();
+                $res = $getIng->get_result();
+                if ($row = $res->fetch_assoc()) {
+                    $ingId = (int)$row['id'];
+                    $linkStmt = $conn->prepare("INSERT IGNORE INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit) VALUES (?, ?, '', '')");
+                    $linkStmt->bind_param("ii", $newId, $ingId);
+                    $linkStmt->execute();
+                    $linkStmt->close();
+                }
+                $getIng->close();
+            }
+        }
+
         http_response_code(201);
-        echo json_encode([
-            "success" => true,
-            "message" => "Recipe created successfully.",
-            "id" => $newId
-        ]);
+        echo json_encode(["success" => true, "message" => "Recipe created.", "id" => $newId]);
         exit;
     }
 
-    // === GET: List or fetch a single recipe ===
     if ($_SERVER["REQUEST_METHOD"] === "GET") {
         if (isset($_GET["id"]) && $_GET["id"] !== "") {
             $id = (int) $_GET["id"];
-
-            $stmt = $conn->prepare(
-                "SELECT id, title, description, category, image_url,
-                        prep_time_minutes, cook_time_minutes, servings, is_featured,
-                        ingredients, instructions
-                 FROM recipes WHERE id = ? LIMIT 1"
-            );
+            $stmt = $conn->prepare("SELECT * FROM recipes WHERE id = ? LIMIT 1");
             $stmt->bind_param("i", $id);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -85,7 +98,11 @@ try {
                         "servings" => (int) $row["servings"],
                         "is_featured" => (bool) $row["is_featured"],
                         "ingredients" => $row["ingredients"],
-                        "instructions" => $row["instructions"]
+                        "instructions" => $row["instructions"],
+                        "calories" => (int) $row["calories"],
+                        "protein" => (float) $row["protein"],
+                        "carbs" => (float) $row["carbs"],
+                        "fat" => (float) $row["fat"]
                     ]
                 ]);
             } else {
@@ -96,13 +113,7 @@ try {
             exit;
         }
 
-        $result = $conn->query(
-            "SELECT id, title, description, category, image_url,
-                    prep_time_minutes, cook_time_minutes, servings, is_featured,
-                    ingredients, instructions
-             FROM recipes ORDER BY id DESC"
-        );
-
+        $result = $conn->query("SELECT * FROM recipes ORDER BY id DESC");
         $recipes = [];
         while ($row = $result->fetch_assoc()) {
             $recipes[] = [
@@ -116,7 +127,11 @@ try {
                 "servings" => (int) $row["servings"],
                 "is_featured" => (bool) $row["is_featured"],
                 "ingredients" => $row["ingredients"],
-                "instructions" => $row["instructions"]
+                "instructions" => $row["instructions"],
+                "calories" => (int) $row["calories"],
+                "protein" => (float) $row["protein"],
+                "carbs" => (float) $row["carbs"],
+                "fat" => (float) $row["fat"]
             ];
         }
 
@@ -124,13 +139,9 @@ try {
         echo json_encode(["success" => true, "count" => count($recipes), "recipes" => $recipes]);
         exit;
     }
-
-    http_response_code(405);
-    echo json_encode(["success" => false, "message" => "Method not allowed."]);
-
 } catch (mysqli_sql_exception $e) {
     error_log($e->getMessage());
     http_response_code(500);
-    echo json_encode(["success" => false, "message" => "Something went wrong."]);
+    echo json_encode(["success" => false, "message" => "Error: " . $e->getMessage()]);
 }
 ?>

@@ -1,9 +1,9 @@
+import { Feather, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StatusBar,
@@ -12,7 +12,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import RecipeImage from '../../components/RecipeImage';
 import { API_URL } from '../../constants/api';
+import { useTheme } from '../../context/ThemeContext';
 
 type Recipe = {
   id: number;
@@ -24,17 +26,12 @@ type Recipe = {
   is_featured: boolean;
 };
 
-const categoryMeta: Record<string, { emoji: string; color: string }> = {
-  Breakfast: { emoji: '🍳', color: '#F9E8D7' },
-  Lunch: { emoji: '🍚', color: '#FFF0E5' },
-  Dinner: { emoji: '🍝', color: '#FCEEDB' },
-  Dessert: { emoji: '🍰', color: '#F5E5DF' },
-};
-
-const totalTime = (recipe: Recipe) =>
-  recipe.prep_time_minutes + recipe.cook_time_minutes;
+const totalTime = (recipe: Recipe) => recipe.prep_time_minutes + recipe.cook_time_minutes;
 
 export default function ExploreScreen() {
+  const { isDark, colors } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,21 +71,14 @@ export default function ExploreScreen() {
     const isCurrentlyFavorite = favoriteIds.includes(recipeId);
     const action = isCurrentlyFavorite ? 'remove' : 'add';
 
-    if (isCurrentlyFavorite) {
-      setFavoriteIds((prev) => prev.filter((id) => id !== recipeId));
-    } else {
-      setFavoriteIds((prev) => [...prev, recipeId]);
-    }
+    if (isCurrentlyFavorite) setFavoriteIds((prev) => prev.filter((id) => id !== recipeId));
+    else setFavoriteIds((prev) => [...prev, recipeId]);
 
     try {
       await fetch(`${API_URL}/favorites.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: Number(storedId),
-          recipe_id: recipeId,
-          action: action,
-        }),
+        body: JSON.stringify({ user_id: Number(storedId), recipe_id: recipeId, action: action }),
       });
     } catch (error) {
       if (isCurrentlyFavorite) setFavoriteIds((prev) => [...prev, recipeId]);
@@ -100,7 +90,7 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
         
         <View style={styles.header}>
@@ -110,33 +100,35 @@ export default function ExploreScreen() {
 
         {isLoading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color="#F47A35" />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <>
             <Text style={styles.sectionTitle}>My Favorites</Text>
             {favoriteRecipes.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.favList}>
-                {favoriteRecipes.map((recipe) => {
-                  const meta = categoryMeta[recipe.category] || { emoji: '🍽️', color: '#FFF0E5' };
-                  return (
-                    <Pressable
-                      key={recipe.id}
-                      style={styles.favCard}
-                      onPress={() => router.push(`/recipe/${recipe.id}`)}
-                    >
-                      <View style={[styles.favImage, { backgroundColor: meta.color }]}>
-                        {recipe.image_url ? (
-                          <Image source={{ uri: recipe.image_url }} style={styles.favActualImage} resizeMode="cover" />
-                        ) : (
-                          <Text style={styles.favEmoji}>{meta.emoji}</Text>
-                        )}
-                      </View>
-                      <Text style={styles.favTitle} numberOfLines={1}>{recipe.title}</Text>
-                      <Text style={styles.favTime}>⏱ {totalTime(recipe)} min</Text>
-                    </Pressable>
-                  );
-                })}
+                {favoriteRecipes.map((recipe) => (
+                  <Pressable
+                    key={recipe.id}
+                    style={styles.favCard}
+                    onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
+                  >
+                    <View style={styles.favImage}>
+                      <RecipeImage
+                        uri={recipe.image_url}
+                        style={styles.favActualImage}
+                        color={colors.border}
+                        emoji="🍽️"
+                        emojiStyle={styles.favEmoji}
+                      />
+                    </View>
+                    <Text style={styles.favTitle} numberOfLines={1}>{recipe.title}</Text>
+                    <View style={styles.metaRow}>
+                      <Feather name="clock" size={10} color={colors.primary} />
+                      <Text style={styles.favTime}>{totalTime(recipe)} min</Text>
+                    </View>
+                  </Pressable>
+                ))}
               </ScrollView>
             ) : (
               <View style={styles.emptyFav}>
@@ -147,33 +139,35 @@ export default function ExploreScreen() {
             <Text style={[styles.sectionTitle, { marginTop: 30 }]}>All Recipes</Text>
             <View style={styles.recipeGrid}>
               {recipes.map((recipe) => {
-                const meta = categoryMeta[recipe.category] || { emoji: '🍽️', color: '#FFF0E5' };
                 const isFav = favoriteIds.includes(recipe.id);
-
                 return (
                   <Pressable
                     key={recipe.id}
                     style={styles.recipeCard}
-                    onPress={() => router.push(`/recipe/${recipe.id}`)}
+                    onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
                   >
-                    <View style={[styles.recipeImage, { backgroundColor: meta.color }]}>
-                      {recipe.image_url ? (
-                        <Image source={{ uri: recipe.image_url }} style={styles.recipeActualImage} resizeMode="cover" />
-                      ) : (
-                        <Text style={styles.recipeEmoji}>{meta.emoji}</Text>
-                      )}
+                    <View style={styles.recipeImage}>
+                      <RecipeImage
+                        uri={recipe.image_url}
+                        style={styles.recipeActualImage}
+                        color={colors.border}
+                        emoji="🍽️"
+                        emojiStyle={styles.recipeEmoji}
+                      />
                       
                       <Pressable
                         style={styles.favoritePosition}
                         onPress={(e) => handleToggleFavorite(recipe.id, e)}
                       >
-                        <Text style={[styles.favorite, isFav && styles.favoriteActive]}>
-                          {isFav ? '♥' : '♡'}
-                        </Text>
+                        <Ionicons 
+                          name={isFav ? 'heart' : 'heart-outline'} 
+                          size={22} 
+                          color={isFav ? colors.primary : '#FFFFFF'} 
+                        />
                       </Pressable>
                     </View>
                     <View style={styles.recipeInfo}>
-                      <Text style={styles.recipeName}>{recipe.title}</Text>
+                      <Text style={styles.recipeName} numberOfLines={1}>{recipe.title}</Text>
                       <Text style={styles.recipeCategory}>{recipe.category}</Text>
                     </View>
                   </Pressable>
@@ -187,54 +181,31 @@ export default function ExploreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFFAF5' },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   container: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 30 },
   center: { padding: 40, alignItems: 'center' },
   header: { marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#30241F' },
-  subtitle: { fontSize: 14, color: '#8C817A', marginTop: 5 },
-  sectionTitle: { fontSize: 19, fontWeight: 'bold', color: '#30241F', marginBottom: 15 },
-  
+  title: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 14, color: colors.subText, marginTop: 5, fontWeight: '500' },
+  sectionTitle: { fontSize: 19, fontWeight: '800', color: colors.text, marginBottom: 15, letterSpacing: -0.3 },
   favList: { gap: 15, paddingRight: 20 },
-  favCard: {
-    width: 130,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#F0E5DC',
-  },
-  favImage: { height: 90, justifyContent: 'center', alignItems: 'center' },
+  favCard: { width: 130, backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden', paddingBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0.2 : 0.03, shadowRadius: 5, elevation: 2 },
+  favImage: { height: 90, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border },
   favEmoji: { fontSize: 40 },
   favActualImage: { width: '100%', height: '100%', position: 'absolute' },
-  favTitle: { fontSize: 13, fontWeight: 'bold', color: '#30241F', marginTop: 8, marginHorizontal: 8 },
-  favTime: { fontSize: 11, color: '#F47A35', marginBottom: 8, marginHorizontal: 8, marginTop: 2 },
-  emptyFav: {
-    backgroundColor: '#FFF0E5',
-    padding: 20,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  emptyFavText: { color: '#F47A35', fontSize: 13, fontWeight: '600' },
-
+  favTitle: { fontSize: 13, fontWeight: 'bold', color: colors.text, marginTop: 8, marginHorizontal: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 8, marginTop: 4, gap: 4 },
+  favTime: { fontSize: 11, color: colors.primary, fontWeight: '600' },
+  emptyFav: { backgroundColor: isDark ? '#2A2A2A' : '#FFF0E5', padding: 20, borderRadius: 14, alignItems: 'center' },
+  emptyFavText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   recipeGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  recipeCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    overflow: 'hidden',
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#F0E5DC',
-  },
-  recipeImage: { height: 115, justifyContent: 'center', alignItems: 'center' },
+  recipeCard: { width: '48%', backgroundColor: colors.card, borderRadius: 15, overflow: 'hidden', marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0.2 : 0.03, shadowRadius: 5, elevation: 2 },
+  recipeImage: { height: 115, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border },
   recipeEmoji: { fontSize: 57 },
   recipeActualImage: { width: '100%', height: '100%', position: 'absolute' },
-  favoritePosition: { position: 'absolute', top: 8, right: 10, padding: 5, zIndex: 10 },
-  favorite: { fontSize: 25, color: '#A99C93' },
-  favoriteActive: { color: '#F47A35' },
+  favoritePosition: { position: 'absolute', top: 8, right: 8, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   recipeInfo: { padding: 11 },
-  recipeName: { fontSize: 14, fontWeight: 'bold', color: '#30241F' },
-  recipeCategory: { fontSize: 11, color: '#8C817A', marginTop: 4 },
+  recipeName: { fontSize: 14, fontWeight: 'bold', color: colors.text },
+  recipeCategory: { fontSize: 11, color: colors.subText, marginTop: 4, fontWeight: '500' },
 });
