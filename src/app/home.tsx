@@ -3,25 +3,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  FlatList,
-  Image,
-  Modal,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
+    ActivityIndicator,
+    Alert,
+    Animated,
+    FlatList,
+    Image,
+    Modal,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+    Pressable,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import RecipeImage from '../../components/RecipeImage';
-import { API_URL } from '../../constants/api';
-import { useTheme } from '../../context/ThemeContext';
+import RecipeImage from '../components/RecipeImage';
+import { API_URL } from '../constants/api';
+import { useTheme } from '../context/ThemeContext';
 
 type Recipe = {
   id: number;
@@ -245,7 +245,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Image 
-            source={require('../../../assets/icon.png')} 
+            source={require('../../assets/icon.png')} 
             style={styles.appLogoImage} 
             resizeMode="contain"
           />

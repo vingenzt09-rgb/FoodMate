@@ -1,3 +1,4 @@
+import { Feather, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -15,12 +16,25 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../constants/api';
+import { useTheme } from '../context/ThemeContext';
 
 export default function RegisterScreen() {
+  const { isDark, colors } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const hasMinLength = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+
+  const isPasswordStrong = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecialChar;
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password || !confirmPassword) {
@@ -33,8 +47,8 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      Alert.alert('Weak Password', 'Password must be at least 8 characters.');
+    if (!isPasswordStrong) {
+      Alert.alert('Weak Password', 'Please create a stronger password according to the checklist.');
       return;
     }
 
@@ -78,7 +92,7 @@ export default function RegisterScreen() {
             text: 'Continue',
             onPress: () =>
               router.replace({
-                pathname: '/tabs/home',
+                pathname: '/home',
                 params: { name: data.name },
               }),
           },
@@ -87,26 +101,24 @@ export default function RegisterScreen() {
 
     } catch (error) {
       console.error('Registration Error:', error);
-
-      if (error instanceof TypeError) {
-        Alert.alert(
-          'Connection Error',
-          'Could not connect to FoodMate server. Please check your internet connection and try again.'
-        );
-      } else if (error instanceof SyntaxError) {
-        Alert.alert(
-          'Server Error',
-          'The server returned an invalid response. Please try again later.'
-        );
-      } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
-      }
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     }
   };
 
+  const renderChecklistItem = (isValid: boolean, text: string) => (
+    <View style={styles.checklistRow}>
+      <Ionicons 
+        name={isValid ? "checkmark-circle" : "ellipse-outline"} 
+        size={16} 
+        color={isValid ? "#4CAF50" : colors.subText} 
+      />
+      <Text style={[styles.checklistText, isValid && { color: '#4CAF50' }]}>{text}</Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -130,7 +142,7 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="Enter your full name"
-              placeholderTextColor="#A99C93"
+              placeholderTextColor={colors.subText}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -140,7 +152,7 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="Enter your email"
-              placeholderTextColor="#A99C93"
+              placeholderTextColor={colors.subText}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -148,24 +160,43 @@ export default function RegisterScreen() {
             />
 
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Create a password"
-              placeholderTextColor="#A99C93"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Create a strong password"
+                placeholderTextColor={colors.subText}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <Pressable onPress={() => setShowPassword(!showPassword)}>
+                <Feather name={showPassword ? "eye-off" : "eye"} size={20} color={colors.subText} />
+              </Pressable>
+            </View>
+
+            {password.length > 0 && (
+              <View style={styles.checklistContainer}>
+                {renderChecklistItem(hasMinLength, 'At least 8 characters')}
+                {renderChecklistItem(hasUppercase, 'At least 1 uppercase letter')}
+                {renderChecklistItem(hasLowercase, 'At least 1 lowercase letter')}
+                {renderChecklistItem(hasNumber, 'At least 1 number')}
+                {renderChecklistItem(hasSpecialChar, 'At least 1 special character')}
+              </View>
+            )}
 
             <Text style={styles.label}>Confirm Password</Text>
             <TextInput
               style={styles.input}
               placeholder="Re-enter your password"
-              placeholderTextColor="#A99C93"
+              placeholderTextColor={colors.subText}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
             />
+            
+            {confirmPassword.length > 0 && password !== confirmPassword && (
+              <Text style={styles.errorText}>Passwords do not match</Text>
+            )}
 
             <Pressable style={styles.registerButton} onPress={handleRegister}>
               <Text style={styles.registerButtonText}>Create Account</Text>
@@ -184,91 +215,27 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFAF5',
-  },
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: 25,
-    paddingTop: 15,
-    paddingBottom: 35,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-  },
-  backText: {
-    color: '#30241F',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 25,
-    marginBottom: 30,
-  },
-  logo: {
-    fontSize: 42,
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#30241F',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#8C817A',
-    textAlign: 'center',
-    marginTop: 9,
-  },
-  form: {
-    width: '100%',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#30241F',
-    marginBottom: 8,
-    marginTop: 13,
-  },
-  input: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: '#EADDD3',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    fontSize: 15,
-    color: '#30241F',
-    backgroundColor: '#FFFFFF',
-  },
-  registerButton: {
-    height: 54,
-    backgroundColor: '#F47A35',
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 28,
-  },
-  registerButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 25,
-  },
-  footerText: {
-    color: '#8C817A',
-    fontSize: 14,
-  },
-  loginText: {
-    color: '#F47A35',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  container: { flexGrow: 1, paddingHorizontal: 25, paddingTop: 15, paddingBottom: 35 },
+  backButton: { alignSelf: 'flex-start', paddingVertical: 8 },
+  backText: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  header: { alignItems: 'center', marginTop: 25, marginBottom: 30 },
+  logo: { fontSize: 42, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: 'bold', color: colors.text },
+  subtitle: { fontSize: 14, color: colors.subText, textAlign: 'center', marginTop: 9 },
+  form: { width: '100%' },
+  label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 8, marginTop: 13 },
+  input: { height: 52, backgroundColor: colors.inputBg, borderRadius: 12, paddingHorizontal: 15, fontSize: 15, color: colors.text },
+  passwordContainer: { height: 52, backgroundColor: colors.inputBg, borderRadius: 12, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center' },
+  passwordInput: { flex: 1, fontSize: 15, color: colors.text },
+  checklistContainer: { marginTop: 10, backgroundColor: colors.card, padding: 12, borderRadius: 10 },
+  checklistRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  checklistText: { fontSize: 12, color: colors.subText, marginLeft: 8, fontWeight: '500' },
+  errorText: { color: '#E57373', fontSize: 12, marginTop: 5, fontWeight: '500' },
+  registerButton: { height: 54, backgroundColor: colors.primary, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginTop: 28 },
+  registerButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 25 },
+  footerText: { color: colors.subText, fontSize: 14 },
+  loginText: { color: colors.primary, fontWeight: 'bold', fontSize: 14 },
 });

@@ -46,10 +46,10 @@ export default function WelcomeScreen() {
             });
 
             if (result.success) {
-              router.replace('/tabs/home');
+              router.replace('/home');
             }
           } else {
-            router.replace('/tabs/home');
+            router.replace('/home');
           }
         }
       } catch (error) {

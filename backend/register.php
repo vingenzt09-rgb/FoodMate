@@ -45,11 +45,17 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-if (strlen($password) < 8) {
+if (
+    strlen($password) < 8 || 
+    !preg_match('/[A-Z]/', $password) || 
+    !preg_match('/[a-z]/', $password) || 
+    !preg_match('/[0-9]/', $password) ||
+    !preg_match('/[^A-Za-z0-9]/', $password)
+) {
     http_response_code(400);
     echo json_encode([
         "success" => false,
-        "message" => "Password must contain at least 8 characters."
+        "message" => "Password must be at least 8 characters and include uppercase, lowercase, number, and special character."
     ]);
     exit;
 }
@@ -78,22 +84,17 @@ try {
 
     if ($e->getCode() === 1062) {
         http_response_code(409);
-
         echo json_encode([
             "success" => false,
             "message" => "This email is already registered."
         ]);
-
     } else {
         error_log($e->getMessage());
-
         http_response_code(500);
-
         echo json_encode([
             "success" => false,
             "message" => "Something went wrong. Please try again."
         ]);
     }
 }
-
 ?>

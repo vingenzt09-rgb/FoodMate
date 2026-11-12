@@ -68,7 +68,7 @@ export default function LoginScreen() {
         await AsyncStorage.removeItem('loginTime');
       }
 
-      router.replace('/tabs/home');
+      router.replace('/home');
     } catch (error) {
       console.error('Login Error:', error);
       Alert.alert('Connection Error', 'Could not connect to FoodMate server. Please try again.');

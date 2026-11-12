@@ -103,7 +103,7 @@ const scaleIngredient = (ingredient: string, scale: number) => {
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isDark, colors } = useTheme();
+  const { isDark, toggleTheme, colors } = useTheme();
   const styles = getStyles(colors, isDark);
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -292,9 +292,14 @@ export default function RecipeDetailScreen() {
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backText}>← Back</Text>
           </Pressable>
-          <Pressable onPress={() => setIsMenuOpen(true)} style={styles.menuButton}>
-            <Feather name="menu" size={20} color={colors.primary} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable onPress={toggleTheme} style={styles.menuButton}>
+              <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={20} color={colors.primary} />
+            </Pressable>
+            <Pressable onPress={() => setIsMenuOpen(true)} style={styles.menuButton}>
+              <Feather name="menu" size={20} color={colors.primary} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.hero}>
